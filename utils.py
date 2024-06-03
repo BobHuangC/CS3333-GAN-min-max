@@ -128,7 +128,7 @@ def get_timestep_images(func_folder_path, kernel, img_step=5):
 
     import os
     os.makedirs(f'{func_folder_path}/{kernel}/images', exist_ok=True)
-
+    print('image generation---')
     for i in tqdm(range(0, _opt_steps, img_step)):
         plt.figure(figsize=(10, 10))
         for j in range(_state_number):
@@ -147,8 +147,10 @@ def get_timestep_images(func_folder_path, kernel, img_step=5):
                 _tmp_draw_y_lis = [y_lis[_time_idx][_state_idx] for _time_idx in range(0, i+1)]			
             plt.plot(_tmp_draw_x_lis, _tmp_draw_y_lis, 'bo-', markersize=0.1)
 
-        plt.xlim(x_min - 0.2, x_max + 0.2)
-        plt.ylim(y_min - 0.2, y_max + 0.2)
+        # plt.xlim(max(x_min - 0.2, -20), min(x_max + 0.2, 20))
+        plt.xlim(-20, 20)
+        # plt.ylim(max(y_min - 0.2, -20), min(y_max + 0.2, 20))
+        plt.ylim(-20, 20)
         plt.title(f'Step {i}')
         plt.savefig(f'{func_folder_path}/{kernel}/images/step_{i}.png')
         plt.close()
@@ -183,7 +185,7 @@ def gif_generation(func_folder_path,
         return sorted(file_paths,  key=get_number_from_file_path)
     
     images_paths = get_all_file_paths(f'{func_folder_path}/{kernel}/images')
-
+    print('gif generation-----')
     for i in tqdm(range(0, len(images_paths), gif_img_step)):
         # images.append(imageio.imread(f'{images_folder_path}/step_{i}.png'))
         images.append(imageio.imread(images_paths[i]))
