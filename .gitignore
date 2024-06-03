@@ -164,3 +164,4 @@ cython_debug/
 
 figure_1/
 images_test/
+**/images/
