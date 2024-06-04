@@ -52,7 +52,7 @@ def OGDA_update_step(alpha, nabla_x, nabla_y):
     return update
 
 
-def optimize(x_0_lis, y_0_lis, update_function, steps, func_folder_path, kernel):
+def optimize(x_0_lis, y_0_lis, update_function, steps, func_folder_path, kernel, bound=20):
     """
     This function takes in the initial x and y for many initializations, the update function, the number of steps and the folder path to save the optimization data
     x_0, y_0: float
@@ -73,6 +73,10 @@ def optimize(x_0_lis, y_0_lis, update_function, steps, func_folder_path, kernel)
         for _ in tqdm(range(steps)):
             for i in range(len(x_current_lis)):
                 x_current_lis[i], y_current_list[i] = update_function(x_current_lis[i], y_current_list[i])
+                if x_current_lis[i] > bound:
+                    x_current_lis[i] = np.nan
+                if y_current_list[i] > bound:
+                    y_current_list[i] = np.nan
             x_lis.append(x_current_lis.copy())
             y_lis.append(y_current_list.copy())
     elif kernel == "OGDA":
@@ -90,6 +94,10 @@ def optimize(x_0_lis, y_0_lis, update_function, steps, func_folder_path, kernel)
                                                                   y_t = y_current_list[i],
                                                                   x_t_minus_1 = x_current_lis[i],
                                                                   y_t_minus_1 = y_current_list[i])
+            if x_current_lis[i] > bound:
+                x_current_lis[i] = np.nan
+            if y_current_list[i] > bound:
+                y_current_list[i] = np.nan
         x_lis.append(x_current_lis.copy())
         y_lis.append(y_current_list.copy())
         print('OGDA_updating---')
@@ -101,6 +109,10 @@ def optimize(x_0_lis, y_0_lis, update_function, steps, func_folder_path, kernel)
                                                                       y_t_minus_1 = deepcopy( y_lis[-2][i]))
 																	#   x_t_minus_1 = x_lis[-2][i].copy(),
 																	#   y_t_minus_1 = y_lis[-2][i].copy())
+                if x_current_lis[i] > bound:
+                    x_current_lis[i] = np.nan
+                if y_current_list[i] > bound:
+                    y_current_list[i] = np.nan
             x_lis.append(x_current_lis.copy())
             y_lis.append(y_current_list.copy())
     
@@ -111,7 +123,7 @@ def optimize(x_0_lis, y_0_lis, update_function, steps, func_folder_path, kernel)
     return
 
 
-def get_timestep_images(func_folder_path, kernel, img_step=5):
+def get_timestep_images(func_folder_path, kernel, img_step=5, func_exp=None):
     """
     This function uses the optimization data to generate the images of the optimization process
     func_folder_path: str, the folder path to save the optimization data
@@ -121,8 +133,8 @@ def get_timestep_images(func_folder_path, kernel, img_step=5):
     """
     x_lis = np.load(f'{func_folder_path}/{kernel}/x_data.npy')
     y_lis = np.load(f'{func_folder_path}/{kernel}/y_data.npy')
-    x_min, x_max = x_lis.min(), x_lis.max()
-    y_min, y_max = y_lis.min(), y_lis.max()
+    x_min, x_max = np.nanmin(x_lis), np.nanmax(x_lis)
+    y_min, y_max = np.nanmin(y_lis), np.nanmax(y_lis)
     _state_number = len(x_lis[0])
     _opt_steps = x_lis.shape[0]
 
@@ -130,6 +142,9 @@ def get_timestep_images(func_folder_path, kernel, img_step=5):
     os.makedirs(f'{func_folder_path}/{kernel}/images', exist_ok=True)
     print('image generation---')
     for i in tqdm(range(0, _opt_steps, img_step)):
+        import os
+        if os.path.exists(f'{func_folder_path}/{kernel}/images/step_{i}.png'):
+            continue
         plt.figure(figsize=(10, 10))
         for j in range(_state_number):
             plt.plot(x_lis[i][j], y_lis[i][j], 'ro')
@@ -147,11 +162,16 @@ def get_timestep_images(func_folder_path, kernel, img_step=5):
                 _tmp_draw_y_lis = [y_lis[_time_idx][_state_idx] for _time_idx in range(0, i+1)]			
             plt.plot(_tmp_draw_x_lis, _tmp_draw_y_lis, 'bo-', markersize=0.1)
 
-        # plt.xlim(max(x_min - 0.2, -20), min(x_max + 0.2, 20))
-        plt.xlim(-20, 20)
-        # plt.ylim(max(y_min - 0.2, -20), min(y_max + 0.2, 20))
-        plt.ylim(-20, 20)
-        plt.title(f'Step {i}')
+        # plt.xlim(max(x_min - 0.2, -0.5), min(x_max + 0.2, 1.5))
+        plt.xlim(max(x_min - 0.2, -2), min(x_max + 0.2, 2))
+        # plt.xlim(-20, 20)
+        # plt.ylim(max(y_min - 0.2, -0.5), min(y_max + 0.2, 1.5))
+        plt.ylim(max(y_min - 0.2, -2), min(y_max + 0.2, 2))
+        # plt.ylim(-20, 20)
+        if func_exp:
+            plt.title(f'Step {i} | {func_exp}')
+        else:
+            plt.title(f'Step {i}')
         plt.savefig(f'{func_folder_path}/{kernel}/images/step_{i}.png')
         plt.close()
 
